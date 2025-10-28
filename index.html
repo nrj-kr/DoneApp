@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Task Planner</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="container">
+    <h1>Family Task Planner</h1>
+    <div class="env-note" id="envNote"></div>
+  </header>
+
+  <main class="container">
+    <section class="card" id="usersSection">
+      <div class="card-header">
+        <h2>Family Members</h2>
+        <button id="refreshUsersBtn" class="btn ghost">Refresh</button>
+      </div>
+      <form id="userForm" class="row gap">
+        <input id="userName" placeholder="Name" required />
+        <input id="userEmail" placeholder="Email (optional)" type="email" />
+        <button type="submit" class="btn">Add Member</button>
+      </form>
+      <ul id="usersList" class="list"></ul>
+    </section>
+
+    <section class="card" id="tasksSection">
+      <div class="card-header">
+        <h2>Tasks</h2>
+        <div class="row gap">
+          <select id="filterUser"></select>
+          <select id="filterStatus">
+            <option value="">All Statuses</option>
+            <option value="todo">To do</option>
+            <option value="in_progress">In progress</option>
+            <option value="done">Done</option>
+          </select>
+          <button id="refreshTasksBtn" class="btn ghost">Refresh</button>
+        </div>
+      </div>
+      <form id="taskForm" class="grid gap">
+        <input id="taskTitle" placeholder="Task title" required />
+        <textarea id="taskDescription" placeholder="Description"></textarea>
+        <div class="row gap">
+          <select id="taskAssignee" required></select>
+          <input id="taskStart" type="date" />
+          <input id="taskDue" type="date" />
+          <select id="taskStatus">
+            <option value="todo">To do</option>
+            <option value="in_progress">In progress</option>
+            <option value="done">Done</option>
+          </select>
+          <button type="submit" class="btn">Add Task</button>
+        </div>
+      </form>
+      <ul id="tasksList" class="list tasks"></ul>
+    </section>
+  </main>
+
+  <footer class="container muted">
+    <small>Data powered by Supabase</small>
+  </footer>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
