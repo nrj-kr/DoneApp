@@ -8,6 +8,17 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Elements
 const envNote = document.getElementById("envNote");
+const appSection = document.getElementById("appSection");
+const authSection = document.getElementById("authSection");
+const googleSignIn = document.getElementById("googleSignIn");
+const signOutBtn = document.getElementById("signOut");
+const authStatus = document.getElementById("authStatus");
+const mfaBox = document.getElementById("mfaBox");
+const mfaEnrollBtn = document.getElementById("mfaEnroll");
+const mfaChallengeBtn = document.getElementById("mfaChallenge");
+const mfaVerifyBtn = document.getElementById("mfaVerify");
+const mfaCodeInput = document.getElementById("mfaCode");
+const mfaQrWrap = document.getElementById("mfaQrWrap");
 
 // Users
 const userForm = document.getElementById("userForm");
@@ -260,9 +271,110 @@ refreshUsersBtn.addEventListener("click", loadUsers);
 refreshTasksBtn.addEventListener("click", loadTasks);
 
 // Initial load
-(async function init() {
+let currentSession = null;
+let currentChallenge = null; // store MFA challenge for verification
+
+function setSignedInUI(isSignedIn) {
+  appSection.style.display = isSignedIn ? "block" : "none";
+  authSection.style.display = "block";
+  googleSignIn.style.display = isSignedIn ? "none" : "inline-block";
+  signOutBtn.style.display = isSignedIn ? "inline-block" : "none";
+  mfaBox.style.display = isSignedIn ? "block" : "none";
+}
+
+async function refreshDataIfSignedIn() {
+  if (!currentSession) return;
   await loadUsers();
   await loadTasks();
+}
+
+// Auth: Google OAuth
+googleSignIn?.addEventListener("click", async () => {
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await db.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+  if (error) alert("Google sign-in error: " + error.message);
+});
+
+signOutBtn?.addEventListener("click", async () => {
+  await db.auth.signOut();
+});
+
+// MFA helpers (TOTP)
+async function showFactors() {
+  const { data, error } = await db.auth.mfa.listFactors();
+  if (error) {
+    console.warn("List factors error", error);
+    return;
+  }
+  const hasTotp = data.totp?.length > 0;
+  mfaEnrollBtn.style.display = hasTotp ? "none" : "inline-block";
+}
+
+mfaEnrollBtn?.addEventListener("click", async () => {
+  // Enroll TOTP factor and display QR
+  const { data, error } = await db.auth.mfa.enroll({ factorType: "totp" });
+  if (error) return alert("MFA enroll failed: " + error.message);
+  const { id, type, totp } = data;
+  // Render QR from otpauth URI
+  const uri = encodeURIComponent(totp.uri);
+  mfaQrWrap.innerHTML = `<div>Scan with Google Authenticator, then enter the 6-digit code.</div><img alt="TOTP QR" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${uri}" />`;
+  // start a challenge for verification
+  const challenge = await db.auth.mfa.challenge({ factorId: id });
+  if (challenge.error) return alert("Challenge failed: " + challenge.error.message);
+  currentChallenge = challenge.data;
+});
+
+mfaChallengeBtn?.addEventListener("click", async () => {
+  const { data, error } = await db.auth.mfa.listFactors();
+  if (error) return alert(error.message);
+  const totp = data.totp?.[0];
+  if (!totp) return alert("No TOTP factor enrolled yet");
+  const challenge = await db.auth.mfa.challenge({ factorId: totp.id });
+  if (challenge.error) return alert("Challenge failed: " + challenge.error.message);
+  currentChallenge = challenge.data;
+  alert("2FA challenge started. Enter your 6-digit code and press Submit Code.");
+});
+
+mfaVerifyBtn?.addEventListener("click", async () => {
+  const code = mfaCodeInput.value.trim();
+  if (!currentChallenge) return alert("Start a challenge first (Enable 2FA or Verify 2FA)");
+  if (!code) return;
+  const { error } = await db.auth.mfa.verify({ challengeId: currentChallenge.id, code });
+  if (error) return alert("Verification failed: " + error.message);
+  currentChallenge = null;
+  mfaQrWrap.innerHTML = "";
+  mfaCodeInput.value = "";
+  alert("2FA verified.");
+});
+
+// Auth state handling
+db.auth.onAuthStateChange(async (event, session) => {
+  currentSession = session;
+  if (session?.user) {
+    authStatus.textContent = `Signed in as ${session.user.email || session.user.id}`;
+    setSignedInUI(true);
+    await showFactors();
+    await refreshDataIfSignedIn();
+  } else {
+    authStatus.textContent = "Signed out";
+    setSignedInUI(false);
+    usersList.innerHTML = "";
+    tasksList.innerHTML = "";
+  }
+});
+
+(async function init() {
+  const { data } = await db.auth.getSession();
+  currentSession = data.session;
+  setSignedInUI(!!currentSession);
+  if (currentSession) {
+    authStatus.textContent = `Signed in as ${currentSession.user.email || currentSession.user.id}`;
+    await showFactors();
+    await refreshDataIfSignedIn();
+  } else {
+    authStatus.textContent = "Signed out";
+  }
 })();
+
 
 
