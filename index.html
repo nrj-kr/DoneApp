@@ -15,7 +15,34 @@
     <div class="env-note" id="envNote"></div>
   </header>
 
-  <main class="container">
+  <section class="container" id="authSection">
+    <div class="card">
+      <div class="card-header">
+        <h2>Sign in</h2>
+      </div>
+      <div class="row gap">
+        <button id="googleSignIn" class="btn">Sign in with Google</button>
+        <button id="signOut" class="btn ghost" style="display:none;">Sign out</button>
+        <div id="authStatus" class="muted"></div>
+      </div>
+      <div id="mfaBox" style="display:none; margin-top:12px;">
+        <div class="card" style="background:#0f1117;">
+          <div class="card-header">
+            <h3 class="muted" style="margin:0;">Two‑Factor Authentication (TOTP)</h3>
+          </div>
+          <div class="row gap" style="flex-wrap:wrap;">
+            <button id="mfaEnroll" class="btn">Enable 2FA</button>
+            <button id="mfaChallenge" class="btn ghost">Verify 2FA</button>
+            <input id="mfaCode" placeholder="6‑digit code" style="width:140px;" />
+            <button id="mfaVerify" class="btn">Submit Code</button>
+          </div>
+          <div id="mfaQrWrap" class="muted" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container" id="appSection" style="display:none;">
     <section class="card" id="usersSection">
       <div class="card-header">
         <h2>Family Members</h2>
@@ -70,5 +97,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
-
