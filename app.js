@@ -375,6 +375,3 @@ db.auth.onAuthStateChange(async (event, session) => {
     authStatus.textContent = "Signed out";
   }
 })();
-
-
-
