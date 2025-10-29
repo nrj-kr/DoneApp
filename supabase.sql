@@ -29,22 +29,34 @@ create index if not exists idx_tasks_due on public.tasks(due_date);
 alter table public.family_users enable row level security;
 alter table public.tasks enable row level security;
 
--- 3) Open policies for demo (anon CRUD). For production, tighten these.
+-- 3) Authenticated policies (recommended). Swap 'to authenticated' for stricter access.
 do $$ begin
-  create policy "anon_select_users" on public.family_users for select to anon using (true);
+  create policy "auth_select_users" on public.family_users for select to authenticated using (true);
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create policy "anon_modify_users" on public.family_users for all to anon using (true) with check (true);
+  create policy "auth_modify_users" on public.family_users for all to authenticated using (true) with check (true);
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create policy "anon_select_tasks" on public.tasks for select to anon using (true);
+  create policy "auth_select_tasks" on public.tasks for select to authenticated using (true);
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create policy "anon_modify_tasks" on public.tasks for all to anon using (true) with check (true);
+  create policy "auth_modify_tasks" on public.tasks for all to authenticated using (true) with check (true);
 exception when duplicate_object then null; end $$;
+
+-- Optional: require AAL2 (MFA) for data access. Uncomment to enforce 2FA.
+-- do $$ begin
+--   create policy "mfa_users_aal2" on public.family_users for all to authenticated
+--   using (coalesce(current_setting('request.jwt.claims', true)::jsonb->>'aal','aal1') = 'aal2')
+--   with check (coalesce(current_setting('request.jwt.claims', true)::jsonb->>'aal','aal1') = 'aal2');
+-- exception when duplicate_object then null; end $$;
+-- do $$ begin
+--   create policy "mfa_tasks_aal2" on public.tasks for all to authenticated
+--   using (coalesce(current_setting('request.jwt.claims', true)::jsonb->>'aal','aal1') = 'aal2')
+--   with check (coalesce(current_setting('request.jwt.claims', true)::jsonb->>'aal','aal1') = 'aal2');
+-- exception when duplicate_object then null; end $$;
 
 -- 4) Simple view for joining (optional). Not required by app, but handy.
 do $$
